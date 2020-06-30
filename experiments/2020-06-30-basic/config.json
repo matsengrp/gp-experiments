@@ -3,7 +3,6 @@
         "prefix": "_output/run",
         "taxon_count": 10,
         "tree_height": 0.8,
-        "seq_len": 1000,
-        "seed": 0
+        "seq_len": 1000
     }
 }

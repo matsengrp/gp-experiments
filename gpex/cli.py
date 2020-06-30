@@ -46,23 +46,11 @@ def restrict_dict_to_params(d_to_restrict, cmd):
     return {key: d_to_restrict[key] for key in d_to_restrict if key in param_names}
 
 
-def set_random_seed(seed):
-    if seed is not None:
-        click.echo(f"LOG: Setting random seed to {seed}.")
-        random.seed(seed)
-
-
 def dry_run_option(command):
     return click.option(
         "--dry-run",
         is_flag=True,
         help="Only print paths and files to be made, rather than actually making them.",
-    )(command)
-
-
-def seed_option(command):
-    return click.option(
-        "--seed", type=int, default=0, show_default=True, help="Set random seed.",
     )(command)
 
 
@@ -89,17 +77,15 @@ def cli():
     "--prefix", type=click.Path(), required=True,
 )
 @dry_run_option
-@seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
 def simulate(
-    taxon_count, seq_len, tree_height, prefix, dry_run, seed,
+    taxon_count, seq_len, tree_height, prefix, dry_run,
 ):
     """Simulate a colaescent tree with an outgroup. """
     relative_additional_height = 0.2
     if dry_run:
         print_method_name_and_locals("prep", locals())
         return
-    set_random_seed(seed)
     inner_tree = kingman(taxon_count - 1, pop_size=1)
     tree = add_outgroup(inner_tree, relative_additional_height)
     tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
@@ -113,11 +99,10 @@ def simulate(
 @click.option(
     "--bootstrap-count", type=int, default=1000,
 )
-@seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def infer(alignment_path, bootstrap_count, seed):
+def infer(alignment_path, bootstrap_count):
     """Infer a tree and bootstraps using iqtree."""
-    iqtree.infer(alignment_path, bootstrap_count=bootstrap_count, seed=seed)
+    iqtree.infer(alignment_path, bootstrap_count=bootstrap_count)
 
 
 @cli.command()
