@@ -5,7 +5,6 @@ import json
 import random
 import click
 import click_config_file
-import gpex
 import gpex.gp as gp
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
