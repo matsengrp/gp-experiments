@@ -5,10 +5,12 @@ import json
 import random
 import click
 import click_config_file
+import gpex
+import gpex.gp as gp
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
 from gpex.tree import add_outgroup, kingman
-from gpex.utils import from_json_file, make_cartesian_product_hierarchy
+from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
 
 
 def alignment_path_of_prefix(prefix):
@@ -104,23 +106,34 @@ def simulate(
     tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
     tree.write(path=f"{prefix}.nwk", schema="newick")
     data = evolve_jc(tree, seq_len)
-    data.write(path=alignment_path_of_prefix(prefix), schema="phylip")
+    data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
 
 
 @cli.command()
-@click.option(
-    "--prefix", type=click.Path(), required=True,
-)
+@click.argument("alignment_path", required=True, type=click.Path(exists=True))
 @click.option(
     "--bootstrap-count", type=int, default=1000,
 )
 @seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def infer(prefix, bootstrap_count, seed):
+def infer(alignment_path, bootstrap_count, seed):
     """Infer a tree and bootstraps using iqtree."""
-    iqtree.infer(
-        alignment_path_of_prefix(prefix), bootstrap_count=bootstrap_count, seed=seed
-    )
+    iqtree.infer(alignment_path, bootstrap_count=bootstrap_count, seed=seed)
+
+
+@cli.command()
+@click.argument("path", required=True, type=click.Path(exists=True))
+def reroot(path):
+    """ Reroot the trees in `path` on "outgroup", outputting to `path.rerooted`."""
+    shell(f"nw_reroot {path} outgroup > {path}.rerooted")
+
+
+@cli.command()
+@click.argument("newick_path", required=True, type=click.Path(exists=True))
+@click.argument("fasta_path", required=True, type=click.Path(exists=True))
+def fit(newick_path, fasta_path):
+    """Fit an SBN using generalized pruning."""
+    gp.fit(newick_path, fasta_path)
 
 
 @cli.command()
@@ -134,9 +147,18 @@ def go(ctx):
     Then touch a `.sentinel` file to signal successful completion.
     """
     prefix = ctx.default_map["prefix"]
+    alignment_path = alignment_path_of_prefix(prefix)
+    ufboot_path = alignment_path + ".ufboot"
+    rerooted_ufboot_path = alignment_path + ".ufboot.rerooted"
     pathlib.Path(prefix).parent.mkdir(parents=True, exist_ok=True)
     ctx.invoke(simulate, **restrict_dict_to_params(ctx.default_map, simulate))
-    ctx.invoke(infer, **restrict_dict_to_params(ctx.default_map, infer))
+    ctx.invoke(
+        infer,
+        alignment_path=alignment_path,
+        **restrict_dict_to_params(ctx.default_map, infer),
+    )
+    ctx.invoke(reroot, path=ufboot_path)
+    ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
     sentinel_path = prefix + ".sentinel"
     click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()

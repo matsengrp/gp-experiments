@@ -5,7 +5,15 @@ import os
 import os.path
 import pickle
 import json
+import subprocess
 import re
+import click
+
+
+def shell(command_string):
+    output = subprocess.check_call(command_string, shell=True)
+    click.echo(f"Completed `{command_string}`.")
+    return output
 
 
 def from_pickle_file(path):
