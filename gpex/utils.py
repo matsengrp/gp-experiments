@@ -6,7 +6,6 @@ import os.path
 import pickle
 import json
 import re
-import pandas as pd
 
 
 def from_pickle_file(path):

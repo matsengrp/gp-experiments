@@ -5,9 +5,14 @@ import json
 import random
 import click
 import click_config_file
-from gpex.utils import from_json_file, make_cartesian_product_hierarchy
+import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
 from gpex.tree import add_outgroup, kingman
+from gpex.utils import from_json_file, make_cartesian_product_hierarchy
+
+
+def alignment_path_of_prefix(prefix):
+    return f"{prefix}.phy"
 
 
 def json_provider(file_path, cmd_name):
@@ -56,10 +61,7 @@ def dry_run_option(command):
 
 def seed_option(command):
     return click.option(
-        "--seed",
-        type=int,
-        show_default=True,
-        help="Set random seed. Seed is uninitialized if not set.",
+        "--seed", type=int, default=0, show_default=True, help="Set random seed.",
     )(command)
 
 
@@ -102,7 +104,18 @@ def simulate(
     tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
     tree.write(path=f"{prefix}.nwk", schema="newick")
     data = evolve_jc(tree, seq_len)
-    data.write(path=f"{prefix}.fasta", schema="fasta")
+    data.write(path=alignment_path_of_prefix(prefix), schema="phylip")
+
+
+@cli.command()
+@click.option(
+    "--prefix", type=click.Path(), required=True,
+)
+@seed_option
+@click_config_file.configuration_option(implicit=False, provider=json_provider)
+def infer(prefix, seed):
+    """Simulate a colaescent tree with an outgroup. """
+    iqtree.infer(alignment_path_of_prefix(prefix), seed=seed)
 
 
 @cli.command()
@@ -116,9 +129,11 @@ def go(ctx):
     Then touch a `.sentinel` file to signal successful completion.
     """
     prefix = ctx.default_map["prefix"]
-    ctx.invoke(simulate ** restrict_dict_to_params(ctx.default_map, simulate),)
+    pathlib.Path(prefix).parent.mkdir(parents=True, exist_ok=True)
+    ctx.invoke(simulate, **restrict_dict_to_params(ctx.default_map, simulate))
+    ctx.invoke(infer, **restrict_dict_to_params(ctx.default_map, infer))
     sentinel_path = prefix + ".sentinel"
-    click.echo(f"LOG: `tdms go` completed; touching {sentinel_path}")
+    click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()
 
 
