@@ -150,7 +150,7 @@ def go(ctx):
         **restrict_dict_to_params(ctx.default_map, infer),
     )
     ctx.invoke(reroot, path=ufboot_path)
-    # ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
+    ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
     sentinel_path = prefix + ".sentinel"
     click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()
