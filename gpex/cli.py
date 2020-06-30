@@ -123,7 +123,9 @@ def infer(alignment_path, bootstrap_count, seed):
 @cli.command()
 @click.argument("path", required=True, type=click.Path(exists=True))
 def reroot(path):
-    """ Reroot the trees in `path` on "outgroup", outputting to `path.rerooted`."""
+    """ Reroot the trees in `path` on "outgroup".
+
+    Output to `path.rerooted`."""
     shell(f"nw_reroot {path} outgroup > {path}.rerooted")
 
 
@@ -141,7 +143,7 @@ def fit(newick_path, fasta_path):
 )
 @click.pass_context
 def go(ctx):
-    """Run a common sequence of commands: create, train, scatter, and beta.
+    """simulate -> infer -> reroot -> fit.
 
     Then touch a `.sentinel` file to signal successful completion.
     """
@@ -166,8 +168,9 @@ def go(ctx):
 @cli.command()
 @click.argument("choice_json_path", required=True, type=click.Path(exists=True))
 def cartesian(choice_json_path):
-    """Take the cartesian product of the variable options in a config file, and
-    put it all in an _output directory."""
+    """Take the cartesian product of variable options.
+
+    Put it all in an _output directory."""
     make_cartesian_product_hierarchy(from_json_file(choice_json_path))
 
 
