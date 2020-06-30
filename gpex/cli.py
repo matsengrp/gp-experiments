@@ -2,13 +2,12 @@
 
 import pathlib
 import json
-import random
 import click
 import click_config_file
 import gpex.gp as gp
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
-from gpex.tree import add_outgroup, kingman
+from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to
 from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
 
 
@@ -71,7 +70,12 @@ def cli():
     "--seq-len", type=int, required=True,
 )
 @click.option(
-    "--tree-height", type=float, required=True,
+    "--tree-height", type=float, help="If set, scale the tree to have this total height"
+)
+@click.option(
+    "--ingroup-branch-length",
+    type=float,
+    help="If set, set all branches other than the outgroup to this length",
 )
 @click.option(
     "--prefix", type=click.Path(), required=True,
@@ -79,16 +83,18 @@ def cli():
 @dry_run_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
 def simulate(
-    taxon_count, seq_len, tree_height, prefix, dry_run,
+    taxon_count, seq_len, tree_height, ingroup_branch_length, prefix, dry_run,
 ):
     """Simulate a colaescent tree with an outgroup. """
-    relative_additional_height = 0.2
     if dry_run:
         print_method_name_and_locals("prep", locals())
         return
     inner_tree = kingman(taxon_count - 1, pop_size=1)
-    tree = add_outgroup(inner_tree, relative_additional_height)
-    tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
+    if ingroup_branch_length is not None:
+        set_all_branch_lengths_to(inner_tree, ingroup_branch_length)
+    tree = add_outgroup(inner_tree, 0.0)
+    if tree_height is not None:
+        tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
     tree.write(path=f"{prefix}.nwk", schema="newick")
     data = evolve_jc(tree, seq_len)
     data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
@@ -144,7 +150,7 @@ def go(ctx):
         **restrict_dict_to_params(ctx.default_map, infer),
     )
     ctx.invoke(reroot, path=ufboot_path)
-    ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
+    # ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
     sentinel_path = prefix + ".sentinel"
     click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()
