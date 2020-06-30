@@ -14,7 +14,7 @@ from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
 
 
 def alignment_path_of_prefix(prefix):
-    return f"{prefix}.phy"
+    return f"{prefix}.fasta"
 
 
 def json_provider(file_path, cmd_name):
