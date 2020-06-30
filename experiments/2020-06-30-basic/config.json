@@ -1,9 +1,9 @@
 {
     "default": {
         "prefix": "_output/run",
-        "taxon_count": 5,
+        "taxon_count": 25,
         "tree_height": 0.8,
-        "seq_len": 50,
+        "seq_len": 500,
         "seed": 0
     }
 }

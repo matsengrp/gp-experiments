@@ -111,11 +111,16 @@ def simulate(
 @click.option(
     "--prefix", type=click.Path(), required=True,
 )
+@click.option(
+    "--bootstrap-count", type=int, default=1000,
+)
 @seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def infer(prefix, seed):
-    """Simulate a colaescent tree with an outgroup. """
-    iqtree.infer(alignment_path_of_prefix(prefix), seed=seed)
+def infer(prefix, bootstrap_count, seed):
+    """Infer a tree and bootstraps using iqtree."""
+    iqtree.infer(
+        alignment_path_of_prefix(prefix), bootstrap_count=bootstrap_count, seed=seed
+    )
 
 
 @cli.command()

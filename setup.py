@@ -17,6 +17,5 @@ setup(
         "plotnine==0.6.0",
         "pylint",
         "pytest",
-        "pyvolve",
     ],
 )
