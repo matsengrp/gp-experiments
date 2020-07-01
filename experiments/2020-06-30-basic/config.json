@@ -3,6 +3,8 @@
         "prefix": "_output/run",
         "taxon_count": 100,
         "ingroup_branch_length": 0.1,
-        "seq_len": 5000
+        "seq_len": 5000,
+        "tol": 0.01,
+        "max_iter": 5
     }
 }
