@@ -125,6 +125,7 @@ def reroot(path):
 @click.argument("fasta_path", required=True, type=click.Path(exists=True))
 @click.option("--tol", type=float, default=1e-2)
 @click.option("--max-iter", type=int, default=10)
+@click_config_file.configuration_option(implicit=False, provider=json_provider)
 def fit(newick_path, fasta_path, tol, max_iter):
     """Fit an SBN using generalized pruning."""
     gp.fit(newick_path, fasta_path, tol, max_iter)
