@@ -2,13 +2,12 @@
 
 import pathlib
 import json
-import random
 import click
 import click_config_file
 import gpex.gp as gp
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
-from gpex.tree import add_outgroup, kingman
+from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to
 from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
 
 
@@ -46,23 +45,11 @@ def restrict_dict_to_params(d_to_restrict, cmd):
     return {key: d_to_restrict[key] for key in d_to_restrict if key in param_names}
 
 
-def set_random_seed(seed):
-    if seed is not None:
-        click.echo(f"LOG: Setting random seed to {seed}.")
-        random.seed(seed)
-
-
 def dry_run_option(command):
     return click.option(
         "--dry-run",
         is_flag=True,
         help="Only print paths and files to be made, rather than actually making them.",
-    )(command)
-
-
-def seed_option(command):
-    return click.option(
-        "--seed", type=int, default=0, show_default=True, help="Set random seed.",
     )(command)
 
 
@@ -83,26 +70,31 @@ def cli():
     "--seq-len", type=int, required=True,
 )
 @click.option(
-    "--tree-height", type=float, required=True,
+    "--tree-height", type=float, help="If set, scale the tree to have this total height"
+)
+@click.option(
+    "--ingroup-branch-length",
+    type=float,
+    help="If set, set all branches other than the outgroup to this length",
 )
 @click.option(
     "--prefix", type=click.Path(), required=True,
 )
 @dry_run_option
-@seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
 def simulate(
-    taxon_count, seq_len, tree_height, prefix, dry_run, seed,
+    taxon_count, seq_len, tree_height, ingroup_branch_length, prefix, dry_run,
 ):
     """Simulate a colaescent tree with an outgroup. """
-    relative_additional_height = 0.2
     if dry_run:
         print_method_name_and_locals("prep", locals())
         return
-    set_random_seed(seed)
     inner_tree = kingman(taxon_count - 1, pop_size=1)
-    tree = add_outgroup(inner_tree, relative_additional_height)
-    tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
+    if ingroup_branch_length is not None:
+        set_all_branch_lengths_to(inner_tree, ingroup_branch_length)
+    tree = add_outgroup(inner_tree, 0.0)
+    if tree_height is not None:
+        tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
     tree.write(path=f"{prefix}.nwk", schema="newick")
     data = evolve_jc(tree, seq_len)
     data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
@@ -113,26 +105,31 @@ def simulate(
 @click.option(
     "--bootstrap-count", type=int, default=1000,
 )
-@seed_option
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def infer(alignment_path, bootstrap_count, seed):
+def infer(alignment_path, bootstrap_count):
     """Infer a tree and bootstraps using iqtree."""
-    iqtree.infer(alignment_path, bootstrap_count=bootstrap_count, seed=seed)
+    iqtree.infer(alignment_path, bootstrap_count=bootstrap_count)
 
 
 @cli.command()
 @click.argument("path", required=True, type=click.Path(exists=True))
 def reroot(path):
-    """ Reroot the trees in `path` on "outgroup", outputting to `path.rerooted`."""
+    """ Reroot the trees in `path` on "outgroup".
+
+    Output to `path.rerooted`."""
     shell(f"nw_reroot {path} outgroup > {path}.rerooted")
 
 
 @cli.command()
 @click.argument("newick_path", required=True, type=click.Path(exists=True))
 @click.argument("fasta_path", required=True, type=click.Path(exists=True))
-def fit(newick_path, fasta_path):
+@click.option("--tol", type=float, default=1e-2)
+@click.option("--max-iter", type=int, default=10)
+@click.option("--bl-only", is_flag=True, help="Only fit branch lengths.")
+@click_config_file.configuration_option(implicit=False, provider=json_provider)
+def fit(newick_path, fasta_path, tol, max_iter, bl_only):
     """Fit an SBN using generalized pruning."""
-    gp.fit(newick_path, fasta_path)
+    gp.fit(newick_path, fasta_path, tol, max_iter, bl_only)
 
 
 @cli.command()
@@ -141,7 +138,7 @@ def fit(newick_path, fasta_path):
 )
 @click.pass_context
 def go(ctx):
-    """Run a common sequence of commands: create, train, scatter, and beta.
+    """simulate -> infer -> reroot -> fit.
 
     Then touch a `.sentinel` file to signal successful completion.
     """
@@ -166,8 +163,9 @@ def go(ctx):
 @cli.command()
 @click.argument("choice_json_path", required=True, type=click.Path(exists=True))
 def cartesian(choice_json_path):
-    """Take the cartesian product of the variable options in a config file, and
-    put it all in an _output directory."""
+    """Take the cartesian product of variable options.
+
+    Put it all in an _output directory."""
     make_cartesian_product_hierarchy(from_json_file(choice_json_path))
 
 

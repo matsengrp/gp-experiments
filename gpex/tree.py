@@ -27,6 +27,11 @@ def birth_death(taxon_count, birth_rate, death_rate):
     )
 
 
+def set_all_branch_lengths_to(tree, length):
+    for node in tree:
+        node.edge.length = length
+
+
 def add_outgroup(tree, relative_additional_height):
     desired_height = (
         1 + relative_additional_height
