@@ -5,7 +5,7 @@
         "ingroup_branch_length": 0.1,
         "seq_len": 6000,
         "tol": 0.01,
-        "max_iter": 1,
+        "max_iter": 10,
         "bl_only": true
     }
 }
