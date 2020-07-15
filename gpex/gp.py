@@ -11,4 +11,4 @@ def fit(newick_path, fasta_path, tol, max_iter, bl_only):
     inst.print_status()
     inst.estimate_branch_lengths(tol, max_iter)
     if not bl_only:
-        inst.estimate_sbn_parameters(tol, max_iter)
+        inst.estimate_sbn_parameters()

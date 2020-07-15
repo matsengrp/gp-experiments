@@ -1,0 +1,1 @@
+perf stat ./fit.sh
