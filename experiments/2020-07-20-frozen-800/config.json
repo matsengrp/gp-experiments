@@ -1,0 +1,11 @@
+{
+    "default": {
+        "prefix": "_output/run",
+        "taxon_count": 800,
+        "ingroup_branch_length": 0.1,
+        "seq_len": 12000,
+        "tol": 0.01,
+        "max_iter": 10,
+        "bl_only": true
+    }
+}
