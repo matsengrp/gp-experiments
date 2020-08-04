@@ -1,0 +1,7 @@
+{
+    "default": {
+        "prefix": "_output/run",
+        "tol": 0.01,
+        "max_iter": 100
+    }
+}
