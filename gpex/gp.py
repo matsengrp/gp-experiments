@@ -12,3 +12,4 @@ def fit(newick_path, fasta_path, tol, max_iter, bl_only):
     inst.estimate_branch_lengths(tol, max_iter)
     if not bl_only:
         inst.estimate_sbn_parameters()
+        inst.sbn_parameters_to_csv("_output/gp-sbn-parameters.csv")
