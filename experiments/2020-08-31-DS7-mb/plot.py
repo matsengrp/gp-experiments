@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+
 sns.set_context("poster")
 
 gp_df = pd.read_csv("_output/gp-sbn-parameters.csv", names=["gpcsp", "GP probability"])
@@ -14,5 +15,6 @@ df.to_csv("_output/sbn-parameter-comparison.csv", index=False)
 
 ax = sns.scatterplot(x="SA probability", y="GP probability", data=df, alpha=0.2)
 ax.set_aspect(1)
+ax.set(ylim=(0, 1))
 sns.despine()
 plt.savefig("ds7-comparison.svg", bbox_inches="tight")
