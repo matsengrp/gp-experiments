@@ -15,6 +15,6 @@ df.to_csv("_output/sbn-parameter-comparison.csv", index=False)
 
 ax = sns.scatterplot(x="SA probability", y="GP probability", data=df, alpha=0.2)
 ax.set_aspect(1)
-ax.set(ylim=(0, 1))
+ax.set(ylim=ax.get_xlim())
 sns.despine()
 plt.savefig("ds7-comparison.svg", bbox_inches="tight")
