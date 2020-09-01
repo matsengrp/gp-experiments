@@ -2,7 +2,7 @@
     "default": {
         "prefix": "_output/run",
         "tol": 0.01,
-        "max_iter": 10,
+        "max_iter": 50,
         "bl_only": true
     }
 }

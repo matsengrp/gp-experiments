@@ -9,7 +9,7 @@ SEQS=DS7.n.fasta
 trap "rm -f _output/mmap.dat" EXIT
 gpex fit --config config.json $TREES $SEQS
 
-# # Train via SBN-SA and put in sa-sbn-params.csv
-# python train-sbn-sa.py
-#
-# python plot.py
+# Train via SBN-SA and put in sa-sbn-params.csv
+python train-sbn-sa.py
+
+python plot.py
