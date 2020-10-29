@@ -8,7 +8,7 @@ setup(
     description="Experiments with generalized pruning",
     packages=["gpex"],
     package_data={"gpex": ["data/*"]},
-    scripts=glob.glob("gpex/scripts/*.sh"),
+    scripts=glob.glob("gpex/scripts/*"),
     entry_points={"console_scripts": ["gpex=gpex.cli:cli"]},
     install_requires=[
         "click-config-file",

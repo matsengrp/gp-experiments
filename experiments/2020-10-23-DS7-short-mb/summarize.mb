@@ -1,0 +1,4 @@
+execute DS7.n.nex;
+begin mrbayes;
+    sumt nruns=2 filename=_ignore/ds7;
+end;

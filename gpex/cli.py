@@ -4,7 +4,8 @@ import pathlib
 import json
 import click
 import click_config_file
-import gpex.gp as gp
+import dendropy
+import gpex.ourlibsbn as ourlibsbn
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
 from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to
@@ -121,15 +122,26 @@ def reroot(path):
 
 
 @cli.command()
-@click.argument("newick_path", required=True, type=click.Path(exists=True))
+@click.argument("tree_path", required=True, type=click.Path(exists=True))
 @click.argument("fasta_path", required=True, type=click.Path(exists=True))
 @click.option("--tol", type=float, default=1e-2)
 @click.option("--max-iter", type=int, default=10)
 @click.option("--bl-only", is_flag=True, help="Only fit branch lengths.")
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def fit(newick_path, fasta_path, tol, max_iter, bl_only):
-    """Fit an SBN using generalized pruning."""
-    gp.fit(newick_path, fasta_path, tol, max_iter, bl_only)
+def fit(tree_path, fasta_path, tol, max_iter, bl_only):
+    """Fit an SBN using generalized pruning.
+
+    Tree file is assumed to be a Newick file unless the path ends with `.nexus`.
+    """
+    ourlibsbn.fit(tree_path, fasta_path, tol, max_iter, bl_only)
+
+
+@cli.command()
+@click.argument("tree_path", required=True, type=click.Path(exists=True))
+@click.argument("out_csv_path", required=True, type=click.Path())
+def simpleaverage(tree_path, out_csv_path):
+    """Fit an SBN using rooted SBN-SA."""
+    ourlibsbn.simpleaverage(tree_path, out_csv_path)
 
 
 @cli.command()
@@ -154,10 +166,30 @@ def go(ctx):
         **restrict_dict_to_params(ctx.default_map, infer),
     )
     ctx.invoke(reroot, path=ufboot_path)
-    ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
+    ctx.invoke(fit, tree_path=rerooted_ufboot_path, fasta_path=alignment_path)
     sentinel_path = prefix + ".sentinel"
     click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()
+
+
+@cli.command()
+@click.argument("in_path", required=True, type=click.Path(exists=True))
+@click.argument("out_path", required=True, type=click.Path())
+def newick_to_nexus_int_sort(in_path, out_path):
+    """Convert a newick file with integer labels to a nexus one in which the taxon block
+    is ordered numerically.
+    """
+    # Parse the trees.
+    trees = dendropy.TreeList.get(path=in_path, schema="newick")
+
+    # Sort the namespace.
+    tns = dendropy.TaxonNamespace([
+        dendropy.Taxon(x) for x in sorted(trees.taxon_namespace.labels(), key=int)
+    ])
+
+    # Write back out with the sorted namespace.
+    trees = dendropy.TreeList.get(path=in_path, schema="newick", taxon_namespace=tns)
+    trees.write(path=out_path, schema="nexus", translate_tree_taxa=True)
 
 
 @cli.command()

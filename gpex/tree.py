@@ -49,3 +49,13 @@ def add_outgroup(tree, relative_additional_height):
     # from Newick. ¯\_(ツ)_/¯
     new_newick = str(new_tree) + ";"
     return Tree.get(data=new_newick, schema="newick")
+
+
+def read_tree_file(gp_instance, tree_path):
+    if tree_path.endswith(".nexus"):
+        gp_instance.read_nexus_file(tree_path)
+    else:
+        gp_instance.read_newick_file(tree_path)
+
+
+

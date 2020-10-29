@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Does tail, but in terms of percents.
+
+set -e
+set -u
+
+if test "$#" -ne 2; then
+    echo "usage: last-percent PERCENTAGE FILE"
+    exit
+fi
+
+percent=${1?}; shift
+ret=0
+for file do
+lines=$(wc -l < "$file") &&
+  tail -n "$((lines * percent / 100))" < "$file" || ret=$?
+done
+exit "$ret"
