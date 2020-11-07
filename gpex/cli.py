@@ -124,16 +124,16 @@ def reroot(path):
 @cli.command()
 @click.argument("tree_path", required=True, type=click.Path(exists=True))
 @click.argument("fasta_path", required=True, type=click.Path(exists=True))
+@click.argument("out_csv_path", required=True, type=click.Path())
 @click.option("--tol", type=float, default=1e-2)
 @click.option("--max-iter", type=int, default=10)
-@click.option("--bl-only", is_flag=True, help="Only fit branch lengths.")
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def fit(tree_path, fasta_path, tol, max_iter, bl_only):
+def fit(tree_path, fasta_path, out_csv_path, tol, max_iter):
     """Fit an SBN using generalized pruning.
 
     Tree file is assumed to be a Newick file unless the path ends with `.nexus`.
     """
-    ourlibsbn.fit(tree_path, fasta_path, tol, max_iter, bl_only)
+    ourlibsbn.fit(tree_path, fasta_path, out_csv_path, tol, max_iter)
 
 
 @cli.command()
@@ -141,7 +141,19 @@ def fit(tree_path, fasta_path, tol, max_iter, bl_only):
 @click.argument("out_csv_path", required=True, type=click.Path())
 def simpleaverage(tree_path, out_csv_path):
     """Fit an SBN using rooted SBN-SA."""
-    ourlibsbn.simpleaverage(tree_path, out_csv_path)
+    inst = ourlibsbn.rooted_instance_of_trees(tree_path)
+    inst.train_simple_average()
+    inst.sbn_parameters_to_csv(out_csv_path)
+
+
+@cli.command()
+@click.argument("tree_path", required=True, type=click.Path(exists=True))
+@click.argument("sbn_parameter_csv_path", required=True, type=click.Path())
+@click.argument("out_path", required=True, type=click.Path())
+def treeprobs(tree_path, sbn_parameter_csv_path, out_path):
+    """Calculate tree probabilities using the supplied SBN parameters."""
+    ourlibsbn.treeprobs(tree_path, sbn_parameter_csv_path).to_csv(
+        out_path, index=False, header=False)
 
 
 @cli.command()
