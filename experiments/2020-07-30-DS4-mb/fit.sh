@@ -7,10 +7,9 @@ SEQS=DS4.n.fasta
 
 # Train via GP
 trap "rm -f _output/mmap.dat" EXIT
-gpex fit --config config.json $TREES $SEQS
-# TODO: output the results as a CSV
+gpex fit --config config.json $TREES $SEQS _output/gp-sbn-parameters.csv
 
 # Train via SBN-SA and put in sa-sbn-params.csv
 python train-sbn-sa.py
 
-# TODO: compare CSVs
+python plot.py
