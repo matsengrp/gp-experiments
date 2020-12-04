@@ -12,6 +12,8 @@ df = pd.merge(gp_df, sa_df)
 assert len(df) == len(sa_df)
 df.to_csv("_output/sbn-parameter-comparison.csv", index=False)
 
+print(df.corr())
+
 ax = sns.scatterplot(x="SA probability", y="GP probability", data=df, alpha=0.2)
 ax.set_aspect(1)
 sns.despine()
