@@ -8,4 +8,4 @@ test -f _ignore/$TREES || gunzip -c $TREES.gz > _ignore/$TREES
 test -f _ignore/$SEQS || gunzip -c $SEQS.gz > _ignore/$SEQS
 
 mkdir -p _output
-gpex fit --config config.json _ignore/$TREES _ignore/$SEQS
+gpex fit --config config.json _ignore/$TREES _ignore/$SEQS _output/gp-sbn-parameters.csv
