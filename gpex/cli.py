@@ -7,7 +7,7 @@ import click_config_file
 import gpex.gp as gp
 import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
-from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to
+from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to, read_tree
 from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
 
 
@@ -99,6 +99,20 @@ def simulate(
     data = evolve_jc(tree, seq_len)
     data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
 
+@cli.command()
+@click.argument("newick_path", required=True, type=click.Path(exists=True))
+@click.option(
+    "--seq-len", type=int, required=True,
+)
+@click.option(
+    "--prefix", type=click.Path(), required=True,
+)
+@click_config_file.configuration_option(implicit=False, provider=json_provider)
+def generate_sequence(newick_path, seq_len, prefix):
+    """Simulate sequence data given tree."""
+    tree = read_tree(newick_path)
+    data = evolve_jc(tree, seq_len)
+    data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
 
 @cli.command()
 @click.argument("alignment_path", required=True, type=click.Path(exists=True))

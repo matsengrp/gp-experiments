@@ -20,6 +20,9 @@ def kingman(taxon_count, pop_size):
         taxon_namespace=taxon_namespace_of_count(taxon_count), pop_size=pop_size
     )
 
+def read_tree(newick_path):
+    tree = Tree.get(path=newick_path, schema="newick")
+    return tree
 
 def birth_death(taxon_count, birth_rate, death_rate):
     return treesim.birth_death_tree(
