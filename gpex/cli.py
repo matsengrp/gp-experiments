@@ -9,7 +9,9 @@ import gpex.iqtree as iqtree
 from gpex.sequences import evolve_jc
 from gpex.tree import add_outgroup, kingman, set_all_branch_lengths_to, read_tree
 from gpex.utils import from_json_file, make_cartesian_product_hierarchy, shell
+from gpex.rooted_instance import simple_average
 
+import libsbn
 
 def alignment_path_of_prefix(prefix):
     return f"{prefix}.fasta"
@@ -105,12 +107,26 @@ def simulate(
     "--seq-len", type=int, required=True,
 )
 @click.option(
+    "--tree-height", type=float, help="If set, scale the tree to have this total height"
+)
+@click.option(
+    "--ingroup-branch-length",
+    type=float,
+    help="If set, set all branches other than the outgroup to this length",
+)
+@click.option(
     "--prefix", type=click.Path(), required=True,
 )
 @click_config_file.configuration_option(implicit=False, provider=json_provider)
-def generate_sequence(newick_path, seq_len, prefix):
+def generate_sequence(newick_path, seq_len, tree_height, ingroup_branch_length, prefix):
     """Simulate sequence data given tree."""
-    tree = read_tree(newick_path)
+    inner_tree = read_tree(newick_path)
+    if ingroup_branch_length is not None:
+        set_all_branch_lengths_to(inner_tree, ingroup_branch_length)
+    tree = add_outgroup(inner_tree, 0.0)
+    if tree_height is not None:
+        tree.scale_edges(tree_height / tree.seed_node.distance_from_tip())
+    tree.write(path=f"{prefix}.nwk", schema="newick")
     data = evolve_jc(tree, seq_len)
     data.write(path=alignment_path_of_prefix(prefix), schema="fasta")
 
@@ -173,6 +189,35 @@ def go(ctx):
     click.echo(f"LOG: `gpex go` completed; touching {sentinel_path}")
     pathlib.Path(sentinel_path).touch()
 
+@cli.command()
+@click_config_file.configuration_option(
+    implicit=False, required=True, provider=json_provider
+)
+@click.pass_context
+def go2(ctx):
+    """simulate sequence -> infer using bootstrap -> estimate SBN parameters -> fit GP.
+
+    Then touch a `.sentinel` file to signal successful completion.
+    """
+    prefix = ctx.default_map["prefix"]
+    alignment_path = alignment_path_of_prefix(prefix)
+    ufboot_path = alignment_path + ".ufboot"
+    rerooted_ufboot_path = alignment_path + ".ufboot.rerooted"
+    pathlib.Path(prefix).parent.mkdir(parents=True, exist_ok=True)
+    ctx.invoke(
+        generate_sequence,  
+        **restrict_dict_to_params(ctx.default_map, generate_sequence))
+    ctx.invoke(
+        infer,
+        alignment_path=alignment_path,
+        **restrict_dict_to_params(ctx.default_map, infer),
+    )
+    ctx.invoke(reroot, path=ufboot_path)
+    ctx.invoke(simple_average, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
+    ctx.invoke(fit, newick_path=rerooted_ufboot_path, fasta_path=alignment_path)
+    sentinel_path = prefix + ".sentinel"
+    click.echo(f"LOG: `gpex go2` completed; touching {sentinel_path}")
+    pathlib.Path(sentinel_path).touch()
 
 @cli.command()
 @click.argument("choice_json_path", required=True, type=click.Path(exists=True))
