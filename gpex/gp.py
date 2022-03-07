@@ -1,10 +1,10 @@
-"""libsbn interface."""
+"""bito interface."""
 
-import libsbn
+import bito
 
 
 def fit(newick_path, fasta_path, tol, max_iter, bl_only):
-    inst = libsbn.gp_instance("_output/mmap.dat")
+    inst = bito.gp_instance("_output/mmap.dat")
     inst.read_fasta_file(fasta_path)
     inst.read_newick_file(newick_path)
     inst.make_engine()
